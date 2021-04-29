@@ -2,10 +2,21 @@ import requests
 import urllib
 import json
 import time
+import sys
+import re
 
 API_TOKEN = ''
 
-bitcoin_address = ''
+if (len(sys.argv) != 2):
+	print('Just one argument required: Bitcoin address.')
+	exit(1)
+
+res = re.compile("^[a-zA-Z|0-9]+$")
+if res.match(sys.argv[1]):
+	bitcoin_address = sys.argv[1]
+else:
+	print('Please enter a valid Bitcoin address!')
+	exit(1)
 
 data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)
 obj = json.loads(data.read())
