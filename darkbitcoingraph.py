@@ -21,8 +21,21 @@ else:
 arr_top_senders = []
 arr_abuse = []
 
-#TOP 5 SENDERS
+#RECEIVED/SENT
 data = requests.get(url='https://hashxp.org/'+bitcoin_address)
+
+st = data.text.find('<tr><th>Received TX</th><td>')
+end = data.text[st+28:].find(' ')
+received = int(data.text[st+28:st+28+end])
+rel_data = data.text[end:]
+st = rel_data.find('<tr><th>Sent TX</th><td>')
+end = rel_data[st+24:].find(' ')
+sent = int(rel_data[st+24:st+24+end])
+print('Received / Sent: ',str(received),'/',str(sent),'\n')
+
+#TOP 5 SENDERS
+st = 0
+end = 0
 st_st = 0
 rel_data = data.text[st_st:]
 for i in range(5):
@@ -44,7 +57,6 @@ addresses_already_requested = []
 
 #ABUSE
 for tx in obj['txs']:
-	break
 	tx_in_address = tx['inputs'][0]['prev_out']['addr']
 	
 	if tx_in_address in addresses_already_requested:
