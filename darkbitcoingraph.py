@@ -18,12 +18,33 @@ else:
 	print('Please enter a valid Bitcoin address!')
 	exit(1)
 
+arr_top_senders = []
+arr_abuse = []
+
+#TOP 5 SENDERS
+data = requests.get(url='https://hashxp.org/'+bitcoin_address)
+st_st = 0
+rel_data = data.text[st_st:]
+for i in range(5):
+	rel_data = rel_data[st_st:]
+	st = rel_data.find('tt class="btcaddr">')
+	end = rel_data[st:].find('</tt>')
+	obj = rel_data[st+19:st+end]
+	obj_count = int(rel_data[st+end+9:st+end+9+2])
+	if obj_count < 2:
+		break
+	st_st = st+end+9+2
+	arr_top_senders.append(obj+" "+str(obj_count))
+	obj_count = 0
+
 data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)
 obj = json.loads(data.read())
 count = 0
 addresses_already_requested = []
 
+#ABUSE
 for tx in obj['txs']:
+	break
 	tx_in_address = tx['inputs'][0]['prev_out']['addr']
 	
 	if tx_in_address in addresses_already_requested:
@@ -43,4 +64,10 @@ for tx in obj['txs']:
 		print('Error generating JSON from: '+data_abuse.text)
 
 	if (obj_abuse['count'] > 0):
-		print(obj_abuse['address']+' '+str(obj_abuse['count']))
+		arr_abuse.append(obj_abuse['address']+' '+str(obj_abuse['count']))
+
+print('======TOP 5 SENDERS======')
+print('\n'.join(arr_top_senders))
+
+print('\n======ABUSE TRANSACTIONS======')
+print('\n'.join(arr_abuse))
