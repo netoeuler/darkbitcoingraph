@@ -143,7 +143,7 @@ for tx in obj['txs']:
 #end for obj['txs']
 file_addr.close()
 
-print('\n\nWallet:',bitcoin_wallet)
+print('\n\nWallet:',bitcoin_wallet) 
 print('Received:',received,'/ Sent:',sent)
 #print('Relayed IPs:',' '.join(arr_relayed_ips))
 
