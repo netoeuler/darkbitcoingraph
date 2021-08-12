@@ -7,6 +7,7 @@ import re
 import os.path
 
 API_TOKEN = ''
+API_WALLET = ''
 
 if (len(sys.argv) != 2):
 	print('Just one argument required: Bitcoin address.')
@@ -18,6 +19,17 @@ if res.match(sys.argv[1]):
 else:
 	print('Please enter a valid Bitcoin address!')
 	exit(1)
+
+bitcoin_wallet = ''
+
+if API_WALLET:
+	API_WALLET = API_WALLET.replace('<bitcoin_address>',bitcoin_address)
+	data = urllib.request.urlopen(API_WALLET)
+	obj = json.loads(data.read())
+	if "label" in obj:
+		bitcoin_wallet = obj['label']
+	else:
+		bitcoin_wallet = "["+obj['wallet_id']+"]"
 
 arr_top_senders = []
 arr_abuse = []
@@ -65,7 +77,7 @@ if resp == 'N':
 
 file_addr = open('output/'+bitcoin_address,'a')
 
-for tx in obj['txs']:
+for tx in obj['txs']:	
 	if count_count > 0:
 		count_count -= 1
 		continue
@@ -131,7 +143,8 @@ for tx in obj['txs']:
 #end for obj['txs']
 file_addr.close()
 
-print('\n\nReceived:',received,'/ Sent:',sent)
+print('\n\nWallet:',bitcoin_wallet)
+print('Received:',received,'/ Sent:',sent)
 #print('Relayed IPs:',' '.join(arr_relayed_ips))
 
 sorted_count = (sorted(count_already_requested)[::-1])[0:5]
