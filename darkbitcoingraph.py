@@ -6,8 +6,8 @@ import sys
 import re
 import os.path
 
-API_TOKEN = ''
-API_WALLET = ''
+API_TOKEN = '7xnJvJpXgm2IhNlq680M0Lld0YtFMLRkzhoHQy5qwxLN7MQj41jnmomVGeT4'
+API_WALLET = 'http://www.walletexplorer.com/api/1/address-lookup?address=<bitcoin_address>&caller=netoeuler@tutanota.com'
 
 if (len(sys.argv) != 2):
 	print('Just one argument required: Bitcoin address.')
