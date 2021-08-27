@@ -6,9 +6,6 @@ import sys
 import re
 import os.path
 
-API_TOKEN = ''
-API_WALLET = ''
-
 if (len(sys.argv) != 2):
 	print('Just one argument required: Bitcoin address.')
 	exit(1)
@@ -19,6 +16,9 @@ if res.match(sys.argv[1]):
 else:
 	print('Please enter a valid Bitcoin address!')
 	exit(1)
+
+API_ABUSE_TOKEN = ''
+API_WALLET = ''
 
 bitcoin_wallet = ''
 
@@ -122,7 +122,7 @@ for tx in obj['txs']:
 				addresses_already_requested.append(tx_in_address)
 				count_already_requested.append(1)
 	
-			data_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+tx_in_address+'&api_token='+API_TOKEN)
+			data_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+tx_in_address+'&api_token='+API_ABUSE_TOKEN)
 			count_abuse += 1
 
 			if (count_abuse > 1 and count_abuse % 30 == 0):
