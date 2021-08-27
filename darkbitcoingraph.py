@@ -27,10 +27,6 @@ for f in file_apis.readlines():
 	if f.startswith('API_WALLET'):
 		API_WALLET = f[13:].replace('\n','')
 
-#print("["+API_ABUSE_TOKEN+"]")
-#print("["+API_WALLET+"]")
-#exit(0)
-
 bitcoin_wallet = ''
 
 if API_WALLET:
