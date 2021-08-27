@@ -20,6 +20,17 @@ else:
 API_ABUSE_TOKEN = ''
 API_WALLET = ''
 
+file_apis = open('.config','r')
+for f in file_apis.readlines():
+	if f.startswith('API_ABUSE_TOKEN'):
+		API_ABUSE_TOKEN = f[18:].replace('\n','')
+	if f.startswith('API_WALLET'):
+		API_WALLET = f[13:].replace('\n','')
+
+#print("["+API_ABUSE_TOKEN+"]")
+#print("["+API_WALLET+"]")
+#exit(0)
+
 bitcoin_wallet = ''
 
 if API_WALLET:
