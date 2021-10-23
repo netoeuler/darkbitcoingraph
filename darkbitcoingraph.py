@@ -33,6 +33,13 @@ for f in file_apis.readlines():
 abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
 if bitcoin_address:
+	try:
+		data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)	
+	except Exception as e:
+		print('[Bitcoin address]',e)
+		exit(1)
+	obj = json.loads(data.read())
+
 	bitcoin_address_wallet = ''
 	if API_WALLET:
 		API_WALLET = API_WALLET.replace('<bitcoin_address>',bitcoin_address)
@@ -48,14 +55,6 @@ if bitcoin_address:
 	arr_abuse = []
 	arr_abuse_types = {}
 	arr_tx_abuse_types = {}
-
-	try:
-		data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)	
-	except Exception as e:
-		print('[Bitcoin address]',e)
-		exit(1)
-	obj = json.loads(data.read())
-
 	count = 0
 
 	if os.path.exists('output/count/'+bitcoin_address):
