@@ -21,14 +21,17 @@ else:
 	exit(1)
 
 API_ABUSE_TOKEN = ''
-API_WALLET = ''
+API_WALLET_ADDR_LOOKUP = ''
+API_WALLET_WAL_ADDR = ''
 
 file_apis = open('.config','r')
 for f in file_apis.readlines():
 	if f.startswith('API_ABUSE_TOKEN'):
 		API_ABUSE_TOKEN = f[18:].replace('\n','')
-	if f.startswith('API_WALLET'):
-		API_WALLET = f[13:].replace('\n','')
+	if f.startswith('API_WALLET_ADDR_LOOKUP'):
+		API_WALLET_ADDR_LOOKUP = f[25:].replace('\n','')
+	if f.startswith('API_WALLET_WAL_ADDR'):
+		API_WALLET_WAL_ADDR = f[23:].replace('\n','')
 
 abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
@@ -41,9 +44,9 @@ if bitcoin_address:
 	obj = json.loads(data.read())
 
 	bitcoin_address_wallet = ''
-	if API_WALLET:
-		API_WALLET = API_WALLET.replace('<bitcoin_address>',bitcoin_address)
-		data = urllib.request.urlopen(API_WALLET)
+	if API_WALLET_ADDR_LOOKUP:
+		API_WALLET_ADDR_LOOKUP = API_WALLET_ADDR_LOOKUP.replace('<bitcoin_address>',bitcoin_address)
+		data = urllib.request.urlopen(API_WALLET_ADDR_LOOKUP)
 		obj = json.loads(data.read())
 		if "label" in obj:
 			bitcoin_address_wallet = obj['label']
@@ -221,3 +224,49 @@ if bitcoin_address:
 	  abuse_value = arr_abuse_types[i] if i in arr_abuse_types.keys() else '-'
 	  abuse_tx_value = arr_tx_abuse_types[i] if i in arr_tx_abuse_types.keys() else '-'
 	  print('{0:20}  {1}'.format(abuse_types[i]+' '+str(abuse_value), abuse_types[i]+' '+str(abuse_tx_value)))
+
+elif wallet_address:
+	if not API_WALLET_WAL_ADDR:
+		print('Please set the API_WALLET_WAL_ADDR value.')
+		exti(1)
+
+	API_WALLET_WAL_ADDR = API_WALLET_WAL_ADDR.replace('<wallet_address>',wallet_address)
+	data = urllib.request.urlopen(API_WALLET_WAL_ADDR)
+	obj = json.loads(data.read())
+
+	if "label" in obj:
+		bitcoin_address_wallet = obj['label']
+	else:
+		bitcoin_address_wallet = "["+obj['wallet_id']+"]"
+	print(bitcoin_address_wallet)
+
+	arr_abuse_types = {}
+	count_abuse = 0
+
+	for bitcoin_address in obj['addresses']:
+		data_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+bitcoin_address+'&api_token='+API_ABUSE_TOKEN)
+		obj_abuse = json.loads(data_abuse.text)
+		count_abuse += 1
+
+		if (count_abuse > 1 and count_abuse % 30 == 0):
+		time.sleep(60)
+
+		if obj_abuse['count'] == 0:
+			continue
+		print(obj_abuse['address']+' '+str(obj_abuse['count']))
+
+		for recent_abuse in obj_abuse['recent']:
+			abuse_type = str(recent_abuse['abuse_type_id'])
+			if abuse_type in arr_abuse_types.keys():
+			    arr_abuse_types[abuse_type] += 1
+			else:
+			    arr_abuse_types[abuse_type] = 1
+
+	print("")
+	for i in ['1','2','3','4','5','99']:
+	  abuse_value = arr_abuse_types[i] if i in arr_abuse_types.keys() else '-'
+	  print(abuse_types[i],abuse_value)
+
+else:
+	print('Something went wrong.')
+	exit(1)
