@@ -46,14 +46,15 @@ if bitcoin_address:
 	arr_top_senders = {}
 	arr_top_receivers = {}
 	arr_abuse = []
+	arr_abuse_types = {}
 	arr_tx_abuse_types = {}
 
-	data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)
-	obj = json.loads(data.read())
-
-	if obj['error']:
-		print(obj['message'])
+	try:
+		data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)	
+	except Exception as e:
+		print('[Bitcoin address]',e)
 		exit(1)
+	obj = json.loads(data.read())
 
 	count = 0
 
@@ -91,6 +92,17 @@ if bitcoin_address:
 
 	if resp == 'N':
 		exit(0)
+
+	#Abuses of this address
+	bitcoin_address_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+bitcoin_address+'&api_token='+API_ABUSE_TOKEN)
+	obj_btc_addr_abuse = json.loads(bitcoin_address_abuse.text)
+	for recent_abuse in obj_btc_addr_abuse['recent']:
+		abuse_type = str(recent_abuse['abuse_type_id'])
+		if abuse_type in arr_tx_abuse_types.keys():
+			arr_abuse_types[abuse_type] += 1
+		else:
+			arr_abuse_types[abuse_type] = 1
+	count_abuse += 1
 
 	file_addr = open('output/'+bitcoin_address,'a')
 
@@ -131,17 +143,17 @@ if bitcoin_address:
 
 			if tx_in_address in addresses_already_requested:
 				if type_tx == 'inputs':
-				    arr_top_senders[tx_in_address] += 1
-				  else:
-				    arr_top_receivers[tx_in_address] += 1
+					arr_top_senders[tx_in_address] += 1
+				else:					
+					arr_top_receivers[tx_in_address] += 1
 				pos_count = addresses_already_requested.index(tx_in_address)
 				count_already_requested[pos_count] += 1
 				continue
 			else:
 				if type_tx == 'inputs':
-				    arr_top_senders[tx_in_address] = 1
-				  else:
-				    arr_top_receivers[tx_in_address] = 1
+					arr_top_senders[tx_in_address] = 1
+				else:
+					arr_top_receivers[tx_in_address] = 1
 				addresses_already_requested.append(tx_in_address)
 				count_already_requested.append(1)
 
@@ -176,13 +188,30 @@ if bitcoin_address:
 	print('\n======TOP 5 SENDERS/RECEIVERS======')
 	top5_sen = (sorted(arr_top_senders.items(),key= lambda x:x[1]))[::-1][:5]
 	top5_rec = (sorted(arr_top_receivers.items(),key= lambda x:x[1]))[::-1][:5]
+	top5_sen_bt_1 = 0 if top5_sen[0][1] > 1 else 1
+	top5_rec_bt_1 = 0 if top5_rec[0][1] > 1 else 1
 	for i in range(5):
-	  sender = str(top5_sen[i][0])+' '+str(top5_sen[i][1]) if i < len(top5_sen) else '-'
-	  receiver = str(top5_rec[i][0])+' '+str(top5_rec[i][1]) if i < len(top5_rec) else '-'
-	  print('{0:20}  {1}'.format(sender, receiver))
+		if top5_sen_bt_1 == 0:
+			if top5_sen[i][1] > 1:
+				sender = top5_sen[i][0]+' '+str(top5_sen[i][1]) if i < len(top5_sen) else '-'
+			else:
+				sender = '-'
+		else:
+			sender = top5_sen[i][0]+' '+str(top5_send[i][1]) if i < len(top5_sen) else '-'
 
-	print('Abuse count:',str(obj_abuse['count']))
-	print('Abuse period:',str(obj_abuse['first_seen']),'/',str(obj_abuse['last_seen']))
+		if top5_rec_bt_1 == 0:
+			if top5_rec[i][1] > 1:
+				receiver = top5_rec[i][0]+' '+str(top5_rec[i][1]) if i < len(top5_rec) else '-'
+			else:
+				receiver = '-'
+		else:
+			receiver = top5_rec[i][0]+' '+str(top5_rec[i][1]) if i < len(top5_rec) else '-'
+
+		if not (sender == '-' and receiver == '-'):
+			print('{0:20}  {1}'.format(sender, receiver))
+
+	print('\nAbuse count:',str(obj_btc_addr_abuse['count']))
+	print('Abuse period:',str(obj_btc_addr_abuse['first_seen']),'/',str(obj_btc_addr_abuse['last_seen']))
 
 	print('\n======ABUSE TRANSACTIONS======')
 	print('\n'.join(arr_abuse))
@@ -192,4 +221,4 @@ if bitcoin_address:
 	for i in ['1','2','3','4','5','99']:
 	  abuse_value = arr_abuse_types[i] if i in arr_abuse_types.keys() else '-'
 	  abuse_tx_value = arr_tx_abuse_types[i] if i in arr_tx_abuse_types.keys() else '-'
-	  print '{0:20}  {1}'.format(abuse_types[i]+' '+str(abuse_value), abuse_types[i]+' '+str(abuse_tx_value))
+	  print('{0:20}  {1}'.format(abuse_types[i]+' '+str(abuse_value), abuse_types[i]+' '+str(abuse_tx_value)))
