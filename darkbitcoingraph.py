@@ -14,8 +14,10 @@ res = re.compile("^[a-zA-Z|0-9]+$")
 if res.match(sys.argv[1]):
 	if len(sys.argv[1]) == 16:
 		wallet_address = sys.argv[1]
+		bitcoin_address = ''
 	else:
 		bitcoin_address = sys.argv[1]
+		wallet_address = ''
 else:
 	print('Please enter a valid Bitcoin or Wallet address!')
 	exit(1)
@@ -31,7 +33,7 @@ for f in file_apis.readlines():
 	if f.startswith('API_WALLET_ADDR_LOOKUP'):
 		API_WALLET_ADDR_LOOKUP = f[25:].replace('\n','')
 	if f.startswith('API_WALLET_WAL_ADDR'):
-		API_WALLET_WAL_ADDR = f[23:].replace('\n','')
+		API_WALLET_WAL_ADDR = f[22:].replace('\n','')
 
 abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
@@ -238,18 +240,19 @@ elif wallet_address:
 		bitcoin_address_wallet = obj['label']
 	else:
 		bitcoin_address_wallet = "["+obj['wallet_id']+"]"
-	print(bitcoin_address_wallet)
+	print(bitcoin_address_wallet,'\n')
 
 	arr_abuse_types = {}
 	count_abuse = 0
 
-	for bitcoin_address in obj['addresses']:
+	for addr in obj['addresses']:
+		bitcoin_address = addr['address']
 		data_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+bitcoin_address+'&api_token='+API_ABUSE_TOKEN)
 		obj_abuse = json.loads(data_abuse.text)
 		count_abuse += 1
 
 		if (count_abuse > 1 and count_abuse % 30 == 0):
-		time.sleep(60)
+			time.sleep(60)
 
 		if obj_abuse['count'] == 0:
 			continue
