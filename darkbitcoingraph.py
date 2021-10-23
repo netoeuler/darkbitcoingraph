@@ -7,14 +7,17 @@ import re
 import os.path
 
 if (len(sys.argv) != 2):
-	print('Just one argument required: Bitcoin address.')
+	print('Just one argument required: Bitcoin or Wallet address.')
 	exit(1)
 
 res = re.compile("^[a-zA-Z|0-9]+$")
 if res.match(sys.argv[1]):
-	bitcoin_address = sys.argv[1]
+	if len(sys.argv[1]) == 16:
+		wallet_address = sys.argv[1]
+	else:
+		bitcoin_address = sys.argv[1]
 else:
-	print('Please enter a valid Bitcoin address!')
+	print('Please enter a valid Bitcoin or Wallet address!')
 	exit(1)
 
 API_ABUSE_TOKEN = ''
@@ -27,108 +30,121 @@ for f in file_apis.readlines():
 	if f.startswith('API_WALLET'):
 		API_WALLET = f[13:].replace('\n','')
 
-bitcoin_wallet = ''
+abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
-if API_WALLET:
-	API_WALLET = API_WALLET.replace('<bitcoin_address>',bitcoin_address)
-	data = urllib.request.urlopen(API_WALLET)
+if bitcoin_address:
+	bitcoin_address_wallet = ''
+	if API_WALLET:
+		API_WALLET = API_WALLET.replace('<bitcoin_address>',bitcoin_address)
+		data = urllib.request.urlopen(API_WALLET)
+		obj = json.loads(data.read())
+		if "label" in obj:
+			bitcoin_address_wallet = obj['label']
+		else:
+			bitcoin_address_wallet = "["+obj['wallet_id']+"]"
+
+	arr_top_senders = {}
+	arr_top_receivers = {}
+	arr_abuse = []
+	arr_tx_abuse_types = {}
+
+	data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)
 	obj = json.loads(data.read())
-	if "label" in obj:
-		bitcoin_wallet = obj['label']
-	else:
-		bitcoin_wallet = "["+obj['wallet_id']+"]"
 
-arr_top_senders = []
-arr_abuse = []
-arr_relayed_ips = []
+	if obj['error']:
+		print(obj['message'])
+		exit(1)
 
-data = urllib.request.urlopen('https://blockchain.info/rawaddr/'+bitcoin_address)
-obj = json.loads(data.read())
+	count = 0
 
-count = 0
+	if os.path.exists('output/count/'+bitcoin_address):
+		file_addr_count = open('output/count/'+bitcoin_address,'r')
+		file_addr_line = file_addr_count.readline()
+		if len(file_addr_line) > 0:
+			try:
+				count = int(file_addr_line.replace('\n',''))
+				#print('Starting with count',str(count))
+			except:
+				print('Error with count')
+				exit(1)
+			finally:
+				file_addr_count.close()
 
-if os.path.exists('output/count/'+bitcoin_address):
-	file_addr_count = open('output/count/'+bitcoin_address,'r')
-	file_addr_line = file_addr_count.readline()
-	if len(file_addr_line) > 0:
-		try:
-			count = int(file_addr_line.replace('\n',''))
-			#print('Starting with count',str(count))
-		except:
-			print('Error with count')
-			exit(1)
-		finally:
-			file_addr_count.close()
+	count_abuse = 0
+	count_count = 0
+	received = 0
+	sent = 0
+	addresses_already_requested = []
+	count_already_requested = []
 
-count_abuse = 0
-count_count = 0
-received = 0
-sent = 0
-addresses_already_requested = []
-count_already_requested = []
+	num_obj = len(obj['txs'])
+	compl_text_obj = '.'
+	if count > 0:
+		num_obj = num_obj - count
+		compl_text_obj = 'still missing.'
+		count_count = count
 
-num_obj = len(obj['txs'])
-compl_text_obj = '.'
-if count > 0:
-	num_obj = num_obj - count
-	compl_text_obj = 'still missing.'
-	count_count = count
+	resp = 0
+	while resp not in ['Y','N']:
+		print('There are',num_obj,'transactions',compl_text_obj,'Do you wanna proceed? [y/n]',end=' ')
+		resp = input().upper()
 
-resp = 0
-while resp not in ['Y','N']:
-	print('There are',num_obj,'transactions',compl_text_obj,'Do you wanna proceed? [y/n]',end=' ')
-	resp = input().upper()
+	if resp == 'N':
+		exit(0)
 
-if resp == 'N':
-	exit(0)
+	file_addr = open('output/'+bitcoin_address,'a')
 
-file_addr = open('output/'+bitcoin_address,'a')
+	for tx in obj['txs']:	
+		if count_count > 0:
+			count_count -= 1
+			continue
+		
+		file_addr_count = open('output/count/'+bitcoin_address,'w')
+		file_addr_count.write(str(count))
+		file_addr_count.close()
 
-for tx in obj['txs']:	
-	if count_count > 0:
-		count_count -= 1
-		continue
-	
-	#type_tx = ['inputs', 'out']
-	file_addr_count = open('output/count/'+bitcoin_address,'w')
-	file_addr_count.write(str(count))
-	file_addr_count.close()
+		type_tx = 'inputs'
+		for inp in tx['inputs']:
+			if bitcoin_address == inp['prev_out']['addr']:
+				type_tx = 'out'
+				break
 
-	if tx['relayed_by'] not in arr_relayed_ips:
-		arr_relayed_ips.append(tx['relayed_by'])
-
-	type_tx = 'inputs'
-	for inp in tx['inputs']:
-		if bitcoin_address == inp['prev_out']['addr']:
-			type_tx = 'out'
-			break
-
-	for list_tytx in [type_tx]:
-		str_type_tx = '>' if list_tytx == 'inputs' else '<'
-		if list_tytx == 'inputs':
+		str_type_tx = '>' if type_tx == 'inputs' else '<'
+		if type_tx == 'inputs':
 			received += 1
-		elif list_tytx == 'out':
+		elif type_tx == 'out':
 			sent += 1
 
-		for tytx in tx[list_tytx]:	
-			if list_tytx == 'inputs':	
+		for tytx in tx[type_tx]:	
+			if type_tx == 'inputs':	
 				tx_in_address = tytx['prev_out']['addr']
-			elif list_tytx == 'out':
+			elif type_tx == 'out':
 				tx_in_address = tytx['addr']
 			else:
 				print('Invalid transaction type')
 				exit(1)
+
+			if tx_in_address == bitcoin_address:
+			  continue
 		
 			count += 1
 
 			if tx_in_address in addresses_already_requested:
+				if type_tx == 'inputs':
+				    arr_top_senders[tx_in_address] += 1
+				  else:
+				    arr_top_receivers[tx_in_address] += 1
 				pos_count = addresses_already_requested.index(tx_in_address)
 				count_already_requested[pos_count] += 1
 				continue
 			else:
+				if type_tx == 'inputs':
+				    arr_top_senders[tx_in_address] = 1
+				  else:
+				    arr_top_receivers[tx_in_address] = 1
 				addresses_already_requested.append(tx_in_address)
 				count_already_requested.append(1)
-	
+
 			data_abuse = requests.get('https://www.bitcoinabuse.com/api/reports/check?address='+tx_in_address+'&api_token='+API_ABUSE_TOKEN)
 			count_abuse += 1
 
@@ -143,30 +159,37 @@ for tx in obj['txs']:
 			if (obj_abuse['count'] > 0):
 				arr_abuse.append(str_type_tx+' '+obj_abuse['address']+' '+str(obj_abuse['count']))
 				file_addr.write(obj_abuse['address']+'\n')
-				#print(str(count),str_type_tx,')',obj_abuse['address'],str(obj_abuse['count']))
+				for recent_abuse in obj_abuse['recent']:
+				  abuse_type = str(recent_abuse['abuse_type_id'])
+				  if abuse_type in arr_tx_abuse_types.keys():
+				    arr_tx_abuse_types[abuse_type] += 1
+				  else:
+				    arr_tx_abuse_types[abuse_type] = 1
 		#end for tx[list_tytx]
 		print('|',sep=" ",end='',flush=True)
-	#end for type_tx
-#end for obj['txs']
-file_addr.close()
+	#end for obj['txs']
+	file_addr.close()
 
-print('\n\nWallet:',bitcoin_wallet) 
-print('Received:',received,'/ Sent:',sent)
-#print('Relayed IPs:',' '.join(arr_relayed_ips))
+	print('\n\nWallet:',bitcoin_address_wallet) 
+	print('Received:',received,'/ Sent:',sent)
 
-sorted_count = (sorted(count_already_requested)[::-1])[0:5]
-count = 0
-count_top_senders = 0
+	print('\n======TOP 5 SENDERS/RECEIVERS======')
+	top5_sen = (sorted(arr_top_senders.items(),key= lambda x:x[1]))[::-1][:5]
+	top5_rec = (sorted(arr_top_receivers.items(),key= lambda x:x[1]))[::-1][:5]
+	for i in range(5):
+	  sender = str(top5_sen[i][0])+' '+str(top5_sen[i][1]) if i < len(top5_sen) else '-'
+	  receiver = str(top5_rec[i][0])+' '+str(top5_rec[i][1]) if i < len(top5_rec) else '-'
+	  print('{0:20}  {1}'.format(sender, receiver))
 
-print('\n======TOP 5 SENDERS======')
-for i in addresses_already_requested:
-	cc = count_already_requested[count]
-	count += 1
-	if cc > 1 and cc in sorted_count:
-		print(i,str(cc))
-		count_top_senders += 1
-	if count_top_senders == 5:
-		break
+	print('Abuse count:',str(obj_abuse['count']))
+	print('Abuse period:',str(obj_abuse['first_seen']),'/',str(obj_abuse['last_seen']))
 
-print('\n======ABUSE TRANSACTIONS======')
-print('\n'.join(arr_abuse))
+	print('\n======ABUSE TRANSACTIONS======')
+	print('\n'.join(arr_abuse))
+
+	print('\n==============ABUSE TYPES=============')
+	print('========(ADDRESS/TRANSACTIONS)========')
+	for i in ['1','2','3','4','5','99']:
+	  abuse_value = arr_abuse_types[i] if i in arr_abuse_types.keys() else '-'
+	  abuse_tx_value = arr_tx_abuse_types[i] if i in arr_tx_abuse_types.keys() else '-'
+	  print '{0:20}  {1}'.format(abuse_types[i]+' '+str(abuse_value), abuse_types[i]+' '+str(abuse_tx_value))
