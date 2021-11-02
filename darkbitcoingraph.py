@@ -23,17 +23,13 @@ else:
 	exit(1)
 
 API_ABUSE_TOKEN = ''
-API_WALLET_ADDR_LOOKUP = ''
-API_WALLET_WAL_ADDR = ''
+API_WALLET_ADDR_LOOKUP = 'http://www.walletexplorer.com/api/1/address-lookup?address=<bitcoin_address>&caller=darkbitcoingraph'
+API_WALLET_WAL_ADDR = 'http://www.walletexplorer.com/api/1/wallet-addresses?wallet=<wallet_address>&from=0&count=100&caller=darkbitcoingraph'
 
 file_apis = open('.config','r')
 for f in file_apis.readlines():
 	if f.startswith('API_ABUSE_TOKEN'):
 		API_ABUSE_TOKEN = f[18:].replace('\n','')
-	if f.startswith('API_WALLET_ADDR_LOOKUP'):
-		API_WALLET_ADDR_LOOKUP = f[25:].replace('\n','')
-	if f.startswith('API_WALLET_WAL_ADDR'):
-		API_WALLET_WAL_ADDR = f[22:].replace('\n','')
 
 abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
