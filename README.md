@@ -14,8 +14,6 @@ Simple generated graph:
 ![sample_graph](https://user-images.githubusercontent.com/3870633/138574330-514d80b4-f007-456f-9f6c-ec3c5cd3ff54.png)
   
 
-To use this tool you need to have access to the [BitcoinAbuseDatabase](https://www.bitcoinabuse.com/) and [WalletExplorer](https://www.walletexplorer.com/) APIs. After that you need to create the '.config' file with this format:<p>
-  API_ABUSE_TOKEN = _api1_<p>
-  API_WALLET_ADDR_LOOKUP = _api2_<p>
-  API_WALLET_WAL_ADDR = _api3_<p>
-Where _api1_, _api2_ and _api3_ are the respective values of each API.
+To use this tool you need to have access to the [BitcoinAbuseDatabase](https://www.bitcoinabuse.com/) API. After that you need to put the token in API_ABUSE_TOKEN variable or create the '.config' file with this format:<p>
+  API_ABUSE_TOKEN = _token_<p>
+Where _token_ is your token to use the BitcoinAbuse API.
