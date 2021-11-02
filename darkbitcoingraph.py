@@ -51,6 +51,12 @@ if bitcoin_address:
 		else:
 			bitcoin_address_wallet = "["+obj['wallet_id']+"]"
 
+	if not os.path.exists('output'):
+		os.mkdir('output')
+		os.mkdir('output/count')
+	else if not os.path.exists('output/count'):
+		os.mkdir('output/count')
+
 	arr_top_senders = {}
 	arr_top_receivers = {}
 	arr_abuse = []
