@@ -1,6 +1,7 @@
 
 # darkbitcoingraph
-Find Bitcoin addresses with abuse reports that made transaction with a specific Bitcoin address to be used to generate a graph in http://osintcombine.tools/
+Find Bitcoin addresses with abuse reports that made transaction with a specific Bitcoin address to be used to generate a graph in http://osintcombine.tools/ <p>
+After execute darkbitcoingraph.py, you need to run generate_output.py passing the pivot Bitcoin address as parameter. It will generate a file with the name of the address with a _tograph at the end, this file have to be submitted to OsintCombineTools to generate the graph with the informations collected with this tool.
 
 Output example:
  - Address:<p>
