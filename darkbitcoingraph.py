@@ -31,6 +31,12 @@ for f in file_apis.readlines():
 	if f.startswith('API_ABUSE_TOKEN'):
 		API_ABUSE_TOKEN = f[18:].replace('\n','')
 
+if API_ABUSE_TOKEN:
+	check_bitcoinabuse_com = requests.get("https://www.bitcoinabuse.com")
+	if check_bitcoinabuse_com.status_code != 200:
+		print("BitcoinAbuseDatabase is down right now...")
+		exit(2)
+
 abuse_types = {'1':'ransomware','2':'darknet market','3':'bitcoin tumbler','4':'blackmail scam','5':'sexortation','99':'other'}
 
 if bitcoin_address:
@@ -45,16 +51,16 @@ if bitcoin_address:
 	if API_WALLET_ADDR_LOOKUP:
 		API_WALLET_ADDR_LOOKUP = API_WALLET_ADDR_LOOKUP.replace('<bitcoin_address>',bitcoin_address)
 		data = urllib.request.urlopen(API_WALLET_ADDR_LOOKUP)
-		obj = json.loads(data.read())
+		obj_w = json.loads(data.read())
 		if "label" in obj:
-			bitcoin_address_wallet = obj['label']
+			bitcoin_address_wallet = obj_w['label']
 		else:
-			bitcoin_address_wallet = "["+obj['wallet_id']+"]"
+			bitcoin_address_wallet = "["+obj_w['wallet_id']+"]"
 
 	if not os.path.exists('output'):
 		os.mkdir('output')
 		os.mkdir('output/count')
-	else if not os.path.exists('output/count'):
+	elif not os.path.exists('output/count'):
 		os.mkdir('output/count')
 
 	arr_top_senders = {}
